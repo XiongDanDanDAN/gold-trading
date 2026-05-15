@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>全球黄金交易时间表 · 实时市场状态</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            background: #f0f2f5;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        /* 实时卡片 */
+        .live-card {
+            background: linear-gradient(135deg, #1e2a3e 0%, #0f172a 100%);
+            border-radius: 32px;
+            padding: 20px 24px;
+            margin-bottom: 24px;
+            color: white;
+            box-shadow: 0 12px 24px -12px rgba(0,0,0,0.3);
+        }
+        .live-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .live-time {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-family: monospace;
+            background: rgba(255,255,255,0.15);
+            padding: 6px 16px;
+            border-radius: 48px;
+            display: inline-block;
+        }
+        .live-date {
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+        .market-status-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-top: 8px;
+        }
+        .status-badge {
+            background: rgba(255,255,255,0.12);
+            border-radius: 28px;
+            padding: 12px 20px;
+            flex: 1 1 200px;
+            backdrop-filter: blur(2px);
+        }
+        .status-label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+            opacity: 0.7;
+        }
+        .status-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .status-desc {
+            font-size: 0.85rem;
+            margin-top: 8px;
+            opacity: 0.8;
+        }
+        .open {
+            color: #4ade80;
+        }
+        .closed {
+            color: #f87171;
+        }
+        .warning {
+            color: #fbbf24;
+        }
+        .pill {
+            font-size: 0.75rem;
+            background: rgba(0,0,0,0.5);
+            border-radius: 20px;
+            padding: 2px 10px;
+            font-weight: normal;
+        }
+        .table-wrapper {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            overflow-x: auto;
+            padding: 4px 0;
+            margin-bottom: 24px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+            min-width: 680px;
+        }
+        th {
+            background: #f8fafc;
+            padding: 16px 12px;
+            text-align: center;
+            font-weight: 600;
+            color: #0f172a;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        td {
+            padding: 12px 12px;
+            border-bottom: 1px solid #eef2ff;
+            vertical-align: top;
+        }
+        .market-name {
+            font-weight: 700;
+            background-color: #fef9c3;
+            color: #854d0e;
+        }
+        .time-highlight {
+            background-color: #e6f7e6;
+            font-weight: 500;
+            position: relative;
+        }
+        .remark {
+            color: #4b5563;
+            font-size: 0.8rem;
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 24px 0 12px 0;
+            padding-left: 6px;
+            border-left: 6px solid #f59e0b;
+        }
+        .info-note {
+            background: #eef2ff;
+            padding: 14px 20px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 20px;
+            color: #1e293b;
+        }
+        footer {
+            text-align: center;
+            margin-top: 32px;
+            font-size: 0.75rem;
+            color: #5b6e8c;
+        }
+        @media (max-width: 700px) {
+            .live-time { font-size: 1.6rem; }
+            .status-value { font-size: 1.2rem; }
+            th, td { padding: 10px 6px; font-size: 0.8rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 实时状态卡片 -->
+    <div class="live-card">
+        <div class="live-header">
+            <div>
+                <div class="live-time" id="currentTime">--:--:--</div>
+                <div class="live-date" id="currentDate">----年--月--日 星期-</div>
+            </div>
+            <div class="pill">⏰ 北京时间 (夏令时)</div>
+        </div>
+        <div class="market-status-grid" id="marketStatusGrid">
+            <!-- 动态生成主要市场状态 -->
+        </div>
+        <div class="info-note" style="background: rgba(255,255,255,0.08); margin-top: 16px; padding: 12px;">
+            💡 基于夏令时交易规则（3月-11月）。每日05:00-06:00为全球现货黄金每日休市结算窗口；周末（周六06:00至周一06:00）所有市场休市。
+        </div>
+    </div>
+
+    <!-- 详细时间表：按时间顺序 -->
+    <div class="section-title">📅 全球黄金交易时间表（北京时间，夏令时）</div>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr><th>时间 (24h)</th><th>市场/盘别</th><th>对应交易场所</th><th>状态/特点</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>04:00</td><td>主要买点窗口开启</td><td>场外/电子盘</td><td>美盘尾盘流动性低，突发跳空风险高</td></tr>
+                <tr><td>05:00</td><td>纽约场内黄金收盘</td><td>COMEX / 伦敦金</td><td>每日休市清算开始 (05:00-06:00)</td></tr>
+                <tr><td>06:00</td><td>纽约COMEX电子盘开盘</td><td>华尔街美盘电子盘</td><td>全球黄金新一轮交易重启，亚洲早盘接力</td></tr>
+                <tr><td>08:00</td><td>亚洲盘活跃期</td><td>东京·香港·新加坡</td><td>波动平缓，方向多延续美盘收盘</td></tr>
+                <tr><td>09:00</td><td>上海黄金交易所(SGE)日盘开盘</td><td>沪金盘</td><td>周一08:50集合竞价，影响国内基准价</td></tr>
+                <tr><td>10:00</td><td>融通金现货报价活跃</td><td>融通金/上金所并行</td><td>珠宝行业参考价，紧跟SGE</td></tr>
+                <tr><td>10:15</td><td>上金所上午中场休市</td><td>沪金盘</td><td>10:15-10:30 休市整理</td></tr>
+                <tr><td>13:30</td><td>上金所午盘开盘</td><td>沪金盘</td><td>国内资金再度入场，关注实金供需</td></tr>
+                <tr><td>15:00</td><td>欧洲盘（伦敦）开盘</td><td>欧盘现货</td><td>全球定价中心启动，交易量明显放大</td></tr>
+                <tr><td>17:00</td><td>欧盘主交易时段</td><td>伦敦/苏黎世</td><td>流动性充沛，趋势突破尝试频繁</td></tr>
+                <tr><td>20:20</td><td>纽约COMEX场内开盘</td><td>华尔街美盘主盘</td><td>欧美最强共振时段开始，高波动窗口</td></tr>
+                <tr><td>20:30</td><td>美国重磅经济数据发布</td><td>华尔街美盘</td><td>非农/CPI/零售等，全天最大引爆点</td></tr>
+                <tr><td>21:00</td><td>上海期货交易所夜盘开盘</td><td>SHFE黄金期货</td><td>国内夜盘同步外盘波动（周五无夜盘）</td></tr>
+                <tr><td>22:00</td><td>上海黄金交易所夜盘开盘</td><td>SGE夜盘</td><td>覆盖欧美重叠核心时段</td></tr>
+                <tr><td>23:30</td><td>欧美重叠中段</td><td>美盘/欧盘</td><td>量化资金频繁进出，盘中剧烈波动</td></tr>
+                <tr><td>00:00 (次日)</td><td>欧洲盘（伦敦）收盘</td><td>欧盘收市</td><td>定价主导权移交纽约市场</td></tr>
+                <tr><td>01:00</td><td>美盘后期</td><td>华尔街电子盘</td><td>流动性渐减，大型基金调仓异动</td></tr>
+                <tr><td>02:30</td><td>国内黄金夜盘收盘</td><td>SGE / SHFE</td><td>上金所+上期所夜盘收市，周五无夜盘</td></tr>
+                <tr><td>03:00</td><td>主要买点窗口关闭</td><td>低流动性时段</td><td>隔夜风险加剧，仅少量场外交易</td></tr>
+                <tr><td>04:30</td><td>纽约COMEX电子盘尾盘</td><td>美盘电子盘</td><td>机构收尾交易，最后博弈</td></tr>
+                <tr><td>05:00</td><td>纽约场内黄金收盘(次日)</td><td>全球黄金休市</td><td>进入每日1小时技术清算，循环至06:00</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 三大盘详细特征 + 交易所独立状态表 -->
+    <div class="section-title">📊 三大盘面对比 & 独立交易所交易状态（实时）</div>
+    <div class="table-wrapper">
+        <table id="detailTradingTable">
+            <thead><tr><th>市场/交易所</th><th>交易时段（北京时间，夏令时）</th><th>当前状态</th><th>备注</th></tr></thead>
+            <tbody id="exchangeStatusBody">
+                <!-- JS动态填充，显示实时交易状态 -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 波动最剧烈时段说明 -->
+    <div class="info-note">
+        ⚡ <strong>波动最剧烈的两大窗口</strong><br>
+        • <strong>欧美重叠时段 (20:30-23:00)</strong>：两大资金池共振，交易量占全天60%以上，振幅为亚盘的3.2倍。<br>
+        • <strong>美国重磅数据发布 (20:30 / 次日02:00)</strong>：非农/CPI/美联储决议等，单日波幅可达30-50美元，数据冲击持续数小时。
+    </div>
+    <footer>数据基于标准夏令时规则（参考伦敦金、纽约COMEX、上海黄金交易所公开时段）。周末全市场休市，每日05:00-06:00全球现货清算休市。周五国内夜盘暂停。</footer>
+</div>
+
+<script>
+    // ---------- 工具函数 ----------
+    function getBeijingDate() {
+        // 获取当前北京时间（用户设备本地时间设置为东八区即可）
+        return new Date();
+    }
+
+    function formatTime(date) {
+        return date.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function formatDate(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2,'0');
+        const day = String(date.getDate()).padStart(2,'0');
+        const weekdays = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
+        const weekday = weekdays[date.getDay()];
+        return `${year}年${month}月${day}日 ${weekday}`;
+    }
+
+    // 获取当前北京时间的小时+分钟 (数值)
+    function getBJHourMinute(date) {
+        return { hour: date.getHours(), minute: date.getMinutes(), day: date.getDay() };
+    }
+
+    // 检查是否周末 (周六=6, 周日=0)
+    function isWeekend(day) {
+        return day === 6 || day === 0;
+    }
+
+    // 通用时间区间判断 (包含边界)
+    function isTimeBetween(hour, minute, startH, startM, endH, endM) {
+        let nowMin = hour * 60 + minute;
+        let startMin = startH * 60 + startM;
+        let endMin = endH * 60 + endM;
+        if (startMin <= endMin) {
+            return nowMin >= startMin && nowMin < endMin;
+        } else {
+            // 跨午夜情况 (比如 20:30 到 03:00)
+            return nowMin >= startMin || nowMin < endMin;
+        }
+    }
+
+    // ---------- 各市场独立状态判断 ----------
+    // 1. 现货黄金（伦敦金 / 连续电子盘）: 周一06:00至周六05:00 且 每日05:00-06:00休市
+    function getSpotGoldStatus(date) {
+        const { hour, minute, day } = getBJHourMinute(date);
+        if (isWeekend(day)) return { open: false, desc: "周末全市场休市" };
+        // 周六凌晨05:00前仍属于周五/周六? 注意周六05:00-周一06:00休市
+        if (day === 6) {
+            // 周六: 只要时间小于05:00则是周六凌晨 (属于前一日周五晚盘延续? 但规则周六06:00至周一06:00休市)
+            // 严格: 周六00:00 - 05:00 其实是纽约尾盘可交易时段，但为了逻辑准确，周六0-5点属于可交易 (因为尚未到休市清算)
+            if (hour < 5) return { open: true, desc: "美盘尾盘交易中" };
+            else return { open: false, desc: "周六休市 (周一06:00重启)" };
+        }
+        if (day === 0) return { open: false, desc: "周日全天休市" };
+        // 周一到周五: 检查每日05:00-06:00休市
+        if (isTimeBetween(hour, minute, 5, 0, 6, 0)) {
+            return { open: false, desc: "每日05:00-06:00全球黄金休市结算" };
+        }
+        return { open: true, desc: "连续交易中 (电子盘覆盖)" };
+    }
+
+    // 2. 纽约COMEX黄金期货 (电子盘时间同现货黄金, 场内20:20额外活跃)
+    function getComexStatus(date) {
+        // 基本同现货黄金
+        const base = getSpotGoldStatus(date);
+        if (!base.open) return base;
+        return { open: true, desc: "电子盘交易中 · 场内即将/已开盘" };
+    }
+
+    // 3. 上海黄金交易所 SGE (Au99.99, 现货实盘)
+    function getSGEStatus(date) {
+        const { hour, minute, day } = getBJHourMinute(date);
+        if (isWeekend(day)) return { open: false, desc: "周末休市" };
+        // 周五无夜盘
+        const isFriday = (day === 5);
+        // 日盘时段: 09:00-11:30 (注意10:15-10:30休市, 需细分)
+        // 午盘: 13:30-15:30
+        // 夜盘: 20:00-次日02:30 (周五无夜盘)
+        // 处理上午盘中的休市
+        if (isTimeBetween(hour, minute, 9, 0, 10, 15)) return { open: true, desc: "日盘早盘交易中" };
+        if (isTimeBetween(hour, minute, 10, 15, 10, 30)) return { open: false, desc: "中场休市(10:15-10:30)" };
+        if (isTimeBetween(hour, minute, 10, 30, 11, 30)) return { open: true, desc: "日盘早盘续交易" };
+        if (isTimeBetween(hour, minute, 13, 30, 15, 30)) return { open: true, desc: "日盘午盘交易中" };
+        // 夜盘: 20:00 - 02:30
+        if (!isFriday && isTimeBetween(hour, minute, 20, 0, 2, 30)) return { open: true, desc: "夜盘交易中 (覆盖美盘)" };
+        if (isFriday && isTimeBetween(hour, minute, 20, 0, 2, 30)) return { open: false, desc: "周五无夜盘" };
+        // 其他时间如11:30-13:30 或 15:30-20:00 或 02:30-09:00 均为休市
+        return { open: false, desc: "非交易时段" };
+    }
+
+    // 4. 上海期货交易所 SHFE (黄金期货)
+    function getSHFEStatus(date) {
+        const { hour, minute, day } = getBJHourMinute(date);
+        if (isWeekend(day)) return { open: false, desc: "周末休市" };
+        const isFriday = (day === 5);
+        // 日盘：09:00-10:15, 10:30-11:30, 13:30-15:00
+        if (isTimeBetween(hour, minute, 9, 0, 10, 15)) return { open: true, desc: "期货日盘上午" };
+        if (isTimeBetween(hour, minute, 10, 15, 10, 30)) return { open: false, desc: "中场休市" };
+        if (isTimeBetween(hour, minute, 10, 30, 11, 30)) return { open: true, desc: "期货日盘上午续" };
+        if (isTimeBetween(hour, minute, 13, 30, 15, 0)) return { open: true, desc: "期货日盘下午" };
+        // 夜盘：21:00-次日02:30 (周五无)
+        if (!isFriday && isTimeBetween(hour, minute, 21, 0, 2, 30)) return { open: true, desc: "期货夜盘交易中" };
+        if (isFriday && isTimeBetween(hour, minute, 21, 0, 2, 30)) return { open: false, desc: "周五无夜盘" };
+        return { open: false, desc: "非交易时段" };
+    }
+
+    // 5. 融通金实物报价盘 (主要跟随SGE)
+    function getRongTongStatus(date) {
+        const sge = getSGEStatus(date);
+        // 融通金报价活跃时间略有提前，但基本交易时段相同，额外描述
+        if (sge.open) return { open: true, desc: "实物报价跟随SGE, 可询价" };
+        return { open: false, desc: "实物盘休市 (参考上金所)" };
+    }
+
+    // 6. 亚洲盘 (广义区域)
+    function getAsianSessionStatus(date) {
+        const { hour, minute, day } = getBJHourMinute(date);
+        if (isWeekend(day)) return { open: false, desc: "周末休市" };
+        if (isTimeBetween(hour, minute, 6, 0, 15, 30)) return { open: true, desc: "亚盘交易时段 (06:00-15:30)" };
+        return { open: false, desc: "非亚盘活跃时间" };
+    }
+
+    // 7. 欧洲盘 (伦敦主导)
+    function getEuroSessionStatus(date) {
+        const { hour, minute, day } = getBJHourMinute(date);
+        if (isWeekend(day)) return { open: false, desc: "周末休市" };
+        if (isTimeBetween(hour, minute, 14, 30, 20, 30)) return { open: true, desc: "欧盘交易中 (流动性拉升)" };
+        return { open: false, desc: "欧盘休市时段" };
+    }
+
+    // 8. 美洲盘 (纽约核心)
+    function getUSSessionStatus(date) {
+        const { hour, minute, day } = getBJHourMinute(date);
+        if (isWeekend(day)) return { open: false, desc: "周末休市" };
+        // 美盘活跃 20:30 - 次日03:00, 另电子盘至05:00也可交易, 但核心定义为20:30-03:00
+        if (isTimeBetween(hour, minute, 20, 30, 3, 0)) return { open: true, desc: "美盘交易中 (波动主战场)" };
+        if (isTimeBetween(hour, minute, 3, 0, 5, 0)) return { open: true, desc: "美盘尾盘 (流动性降低)" };
+        return { open: false, desc: "美盘休市时段" };
+    }
+
+    // 构建交易所详细列表及实时状态
+    function updateExchangeTable() {
+        const now = getBeijingDate();
+        const exchanges = [
+            { name: "伦敦金 / 现货黄金", statusFunc: getSpotGoldStatus, note: "24h电子盘，每日05:00-06:00休市" },
+            { name: "纽约COMEX黄金期货", statusFunc: getComexStatus, note: "CME Globex电子盘 + 场内20:20-01:00" },
+            { name: "上海黄金交易所 (SGE)", statusFunc: getSGEStatus, note: "日盘+夜盘(周五无夜盘)，午间休市" },
+            { name: "上海期货交易所 (SHFE)", statusFunc: getSHFEStatus, note: "黄金期货，夜盘21:00-02:30" },
+            { name: "融通金实物报价", statusFunc: getRongTongStatus, note: "珠宝业参考价，跟上金所波动" },
+            { name: "亚洲盘 (东京/香港/新加坡)", statusFunc: getAsianSessionStatus, note: "06:00-15:30 波动平缓" },
+            { name: "欧洲盘 (伦敦/苏黎世)", statusFunc: getEuroSessionStatus, note: "14:30-20:30 趋势初现" },
+            { name: "美洲盘 (纽约华尔街)", statusFunc: getUSSessionStatus, note: "20:30-03:00 最剧烈波动" }
+        ];
+        const tbody = document.getElementById('exchangeStatusBody');
+        tbody.innerHTML = '';
+        for (let ex of exchanges) {
+            const status = ex.statusFunc(now);
+            const statusText = status.open ? '✅ 交易中' : '⛔ 休市 / 暂停';
+            const statusClass = status.open ? 'open' : 'closed';
+            const row = tbody.insertRow();
+            const cellName = row.insertCell(0);
+            const cellTime = row.insertCell(1);
+            const cellStatus = row.insertCell(2);
+            const cellNote = row.insertCell(3);
+            cellName.innerHTML = `<strong>${ex.name}</strong>`;
+            cellTime.innerHTML = ex.note;
+            cellStatus.innerHTML = `<span style="font-weight:600; color:${status.open ? '#2e7d32' : '#c62828'}">${statusText}</span><br><span class="remark">${status.desc}</span>`;
+            cellNote.innerHTML = ex.note;
+        }
+    }
+
+    // 顶部市场状态卡 (三大盘快速概览)
+    function updateMarketStatusCards() {
+        const now = getBeijingDate();
+        const asian = getAsianSessionStatus(now);
+        const euro = getEuroSessionStatus(now);
+        const us = getUSSessionStatus(now);
+        const spot = getSpotGoldStatus(now);
+        const sge = getSGEStatus(now);
+        
+        const grid = document.getElementById('marketStatusGrid');
+        grid.innerHTML = `
+            <div class="status-badge"><div class="status-label">🌏 亚洲盘</div><div class="status-value ${asian.open ? 'open' : 'closed'}">${asian.open ? '活跃中' : '休市'}</div><div class="status-desc">${asian.desc}</div></div>
+            <div class="status-badge"><div class="status-label">🇪🇺 欧洲盘</div><div class="status-value ${euro.open ? 'open' : 'closed'}">${euro.open ? '交易中' : '休市'}</div><div class="status-desc">${euro.desc}</div></div>
+            <div class="status-badge"><div class="status-label">🇺🇸 美洲盘</div><div class="status-value ${us.open ? 'open' : 'closed'}">${us.open ? '主行情窗口' : '休市'}</div><div class="status-desc">${us.desc}</div></div>
+            <div class="status-badge"><div class="status-label">💰 全球现货黄金</div><div class="status-value ${spot.open ? 'open' : 'closed'}">${spot.open ? '可交易' : '休市清算'}</div><div class="status-desc">${spot.desc}</div></div>
+            <div class="status-badge"><div class="status-label">🏛️ 上海金(SGE)</div><div class="status-value ${sge.open ? 'open' : 'closed'}">${sge.open ? '开盘' : '休市'}</div><div class="status-desc">${sge.desc}</div></div>
+        `;
+    }
+
+    // 刷新时间及所有UI
+    function refreshAll() {
+        const now = getBeijingDate();
+        document.getElementById('currentTime').innerText = formatTime(now);
+        document.getElementById('currentDate').innerText = formatDate(now);
+        updateMarketStatusCards();
+        updateExchangeTable();
+    }
+
+    // 每秒钟刷新时钟，每30秒刷新状态（保证状态准确）
+    let timeInterval = setInterval(() => {
+        const now = getBeijingDate();
+        document.getElementById('currentTime').innerText = formatTime(now);
+        document.getElementById('currentDate').innerText = formatDate(now);
+    }, 1000);
+    
+    let statusInterval = setInterval(() => {
+        updateMarketStatusCards();
+        updateExchangeTable();
+    }, 30000);
+    
+    // 初始化
+    refreshAll();
+    // 额外加载时高亮表格中当前时间附近的行 (可选)
+    function highlightCurrentTimeRow() {
+        // 不做高亮以免眼花，但可以保留高级效果，忽略
+    }
+</script>
+</body>
+</html>
